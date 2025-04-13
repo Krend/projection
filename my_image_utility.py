@@ -39,8 +39,10 @@ def project_texture(tex_source: Image, tex_target: Image, bounds_rect: mmf.Rect,
             # Get the pixel coordinates in the source image
             x_source, y_source = mmf.source_to_dest(i, j, combined_matrix)
             if 0 <= x_source < tex_source.width -1 and 0 <= y_source < tex_source.height -1:
-                color = tex_source.getpixel((round(x_source), round(y_source)))  # Pass coordinates as a tuple
-                tex_target.putpixel((i, j), color)            
+                color = tex_source.getpixel((x_source, y_source))  # Pass coordinates as a tuple
+                tex_target.putpixel((i, j), color)
+            else:                
+                tex_target.putpixel((i, j), (255, 255, 255, 255))
     return tex_target
 
 def project_texture_to_canvas(proj_matrix: mmf.Matrix4x4, pt_start: mmf.Point2D, pt_end: mmf.Point2D, pt_prev_3d_start: mmf.Point3D, pt_unit_start: mmf.Point3D, width: int, height: int, tex_in: Image, canvas: QLabel):
@@ -54,15 +56,16 @@ def project_texture_to_canvas(proj_matrix: mmf.Matrix4x4, pt_start: mmf.Point2D,
     if pt3_out_list[0] == pt_prev_3d_start:
         pt3_out_list[0] = pt_unit_start
 
-    rec_3d, unit_rec = mmf.line_to_unit_square_3d_3d(pt3_out_list[0], pt3_out_list[1])
+    rec_3d, pt_unit_start = mmf.line_to_unit_square_3d_3d(pt3_out_list[0], pt3_out_list[1])
     pt_prev_3d_start = pt3_out_list[1]
-    pt2_quad = mmf.list_project_3d_2d(rec_3d, width, height, proj_matrix)
+    
+    quad_2d = mmf.list_project_3d_2d(rec_3d, width, height, proj_matrix)
 
-    l, g, t = mmf.get_coeffs(pt2_quad[0].x, pt2_quad[1].x, pt2_quad[2].x, pt2_quad[3].x,
-                             pt2_quad[0].y, pt2_quad[1].y, pt2_quad[2].y, pt2_quad[3].y)
+    l, g, t = mmf.get_coeffs(quad_2d[0].x, quad_2d[1].x, quad_2d[2].x, quad_2d[3].x,
+                             quad_2d[0].y, quad_2d[1].y, quad_2d[2].y, quad_2d[3].y)
     matrix_b = mmf.Matrix3x3()
-    matrix_b.m = [l * pt2_quad[0].x, g * pt2_quad[1].x, t * pt2_quad[2].x,
-                  l * pt2_quad[0].y, g * pt2_quad[1].y, t * pt2_quad[2].y,
+    matrix_b.m = [l * quad_2d[0].x, g * quad_2d[1].x, t * quad_2d[2].x,
+                  l * quad_2d[0].y, g * quad_2d[1].y, t * quad_2d[2].y,
                   l,                 g,                 t]
 
     l, g, t = mmf.get_coeffs(0, 0, tex_in.width, tex_in.width,
@@ -76,18 +79,20 @@ def project_texture_to_canvas(proj_matrix: mmf.Matrix4x4, pt_start: mmf.Point2D,
     matrix_c = mmf.multiply3x3(matrix_a, matrix_b)
 
     quad = mmf.Quad()
-    quad.pts = pt2_quad
+    quad.pts = quad_2d
 
     rec = mmf.quad_to_rect(quad)
 
     tex_out = Image.new(tex_in.mode, (canvas.width(), canvas.height()), (0, 0, 0, 0))
+    #tex_out = Image.new(tex_in.mode, (720, 567), (0, 0, 0, 0))
     project_texture(tex_in, tex_out, rec, matrix_c)
 
     # Draw the texture onto the canvas
-    draw_onto_qlabel(canvas, tex_out)
-    #draw_onto_qlabel(canvas, tex_in)
+    draw_onto_qlabel(canvas, tex_out)    
     draw_bounding_rectangle(canvas, rec)
     draw_bounding_quad(canvas, quad)    
+
+    return pt_prev_3d_start, pt_unit_start
 
 
 def draw_onto_qlabel(canvas: QLabel, image_in: Image):

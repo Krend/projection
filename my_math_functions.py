@@ -240,10 +240,10 @@ def source_to_dest(x_source: int, y_source: int, combined_matrix: Matrix3x3):
     yTmp = combined_matrix.m[3] * x_source + combined_matrix.m[4] * y_source + combined_matrix.m[5]
     zTmp = combined_matrix.m[6] * x_source + combined_matrix.m[7] * y_source + combined_matrix.m[8]
 
-    if zTmp == 0:
+    if zTmp == 0.0:
         return -1, -1   #todo: check if this can be a valid result
        
-    return (xTmp / zTmp), (yTmp / zTmp)
+    return round(xTmp / zTmp), round(yTmp / zTmp)
 
 # Return the rectange which is around the quad
 # quad.pts size of 4
@@ -277,7 +277,7 @@ def project_3d_2d(pt3d: Point3D, width: int, height: int, matrix: Matrix4x4):
     if w == 0:
         return -1, -1   #todo: check if this can be a valid result
         
-    return (width * (x / w + 1.0) * 0.5), (height * (y / w + 1.0) * 0.5)
+    return (width * (x / w + 1.0) / 2), (height * (y / w + 1.0) / 2)
 
 # This function is used to project a 2D point onto a 3D space using an inverse transformation matrix.m.
 # It takes a 2D point (Pt), an inverse transformation matrix.m (inv_matrix.m), and the width and height of the 2D plane as inputs.
@@ -387,6 +387,8 @@ def list_project_3d_2d(pt3d_list: List[Point3D], width: int, height: int, matrix
     for pt3d in pt3d_list:
         pt2d = Point2D(0, 0)
         pt2d.x, pt2d.y = project_3d_2d(pt3d, width, height, matrix)
+        pt2d.x = round(pt2d.x)
+        pt2d.y = round(pt2d.y)
         pt2d_list.append(pt2d)
 
     return pt2d_list
@@ -402,8 +404,9 @@ def calc_rot_angle(pt_center: Point2D, pt_top: Point2D, pt_act: Point2D):
 
     angle1 = math.atan2(dy1, dx1)
     angle2 = math.atan2(dy2, dx2)
-
-    return (angle2 - angle1)
+        
+    #return (angle2 - angle1)
+    return math.pi - 1 * math.acos((dx1*dx2+dy1*dy2) / (math.sqrt((dx1*dx1)+(dy1*dy1))*math.sqrt((dx2*dx2)+(dy2*dy2))))
 
 def line_to_unit_square_3d_3d(pt_start: Point2D,  pt_end: Point2D):
     out_rec_3d: List[Point3D]

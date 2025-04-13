@@ -13,6 +13,10 @@ class Canvas(QMainWindow):
     ref_quad = mmf.Quad() # The 4 reference points which will be used to calculate the transformation matrix
     texture: Image # The texture image which will be projected onto the background
     proj_matrix =  mmf.Matrix4x4()
+    pt_start = mmf.Point2D(0, 0)
+    pt_end = mmf.Point2D(0, 0)
+    pt_prev_3d_start = mmf.Point3D(0, 0, 0)
+    pt_unit_start = mmf.Point3D(0, 0, 0)
 
     def __init__(self):
         super().__init__()
@@ -50,6 +54,8 @@ class Canvas(QMainWindow):
         print(f"Angle: {angle}")
 
     def on_second_button_click(self):
+        self.texture = miu.load_image_to_bitmap("resource/backgrounds/textureC2.bmp")
+        self.texture  = self.texture.convert("RGBA")
         self.ref_quad.pts[0] = mmf.Point2D(318, 247)
         self.ref_quad.pts[1] = mmf.Point2D(326, 312)
         #self.ref_quad.pts[2] = mmf.Point2D(452, 303)
@@ -61,15 +67,16 @@ class Canvas(QMainWindow):
         print(self.proj_matrix)
 
     def on_third_button_click(self):
-        self.texture = miu.load_image_to_bitmap("resource/backgrounds/Untitled.bmp")
-        if self.texture is not None:
+        #self.texture = miu.load_image_to_bitmap("resource/backgrounds/Untitled.bmp")
+        #if self.texture is not None:
             # Convert PIL Image (BmpImageFile) to QImage
-            image = self.texture.convert("RGBA")  # Ensure the image is in RGBA format
-            data = image.tobytes("raw", "RGBA")
-            qimage = QImage(data, image.width, image.height, QImage.Format_RGBA8888)
-            self.image_label.setPixmap(QPixmap.fromImage(qimage).scaledToHeight(self.height()))  # Scale the image to fit the window height            
-        else:
-            print("Failed to load texture image.")
+        #    image = self.texture.convert("RGBA")  # Ensure the image is in RGBA format
+        #    data = image.tobytes("raw", "RGBA")
+        #    qimage = QImage(data, image.width, image.height, QImage.Format_RGBA8888)
+        #    self.image_label.setPixmap(QPixmap.fromImage(qimage).scaledToHeight(self.height()))  # Scale the image to fit the window height            
+        #else:
+        print("Failed to load texture image.")
+
 
     def on_fourth_button_click(self):
         # Draw the texture over the background image at the specified coordinates
@@ -86,10 +93,9 @@ class Canvas(QMainWindow):
             overlay_image = overlay_image.convert("RGBA")
             pt2_start = mmf.Point2D(300, 300)
             pt2_end = mmf.Point2D(301, 301)
-            pt3 = mmf.Point3D(0, 0, 0)
-            pt_unit_start = mmf.Point3D(0, 0, 0)
             #miu.project_texture_to_canvas(self.proj_matrix, pt2_start, pt2_end, pt3, pt_unit_start, 720, 576, overlay_image, self.image_label.pixmap().toImage())
-            miu.project_texture_to_canvas(self.proj_matrix, pt2_start, pt2_end, pt3, pt_unit_start, 720, 576, overlay_image, self.image_label)
+            self.pt_prev_3d_start, self.pt_unit_start = miu.project_texture_to_canvas(self.proj_matrix, pt2_start, pt2_end, self.pt_prev_3d_start, self.pt_unit_start,  720, 576, overlay_image, self.image_label)
+            #miu.project_texture_to_canvas(self.proj_matrix, pt2_start, pt2_end, pt3, pt_unit_start, 800, 600, overlay_image, self.image_label)
 
     def paintEvent(self, event):
         painter = QPainter(self)        
@@ -109,14 +115,14 @@ class Canvas(QMainWindow):
         # Get the mouse position relative to the image_label
         label_pos = self.image_label.mapFromParent(event.pos())
         x, y = label_pos.x(), label_pos.y()
-
+        
         # Check if the position is within the bounds of the image_label
         if 0 <= x < self.image_label.width() and 0 <= y < self.image_label.height():
-            #self.setWindowTitle(f"Mouse move over image_label at: ({x}, {y})")
-            #self.set_pixel(x, y, QColor(Qt.red))  # Set the pixel color to red at the position
-            self.load_background(BACKGROUND_IMAGE)  # reset the image
-            overlay_image_path = "resource/backgrounds/textureC2.bmp"
-            self.draw_image(overlay_image_path, x, y)
+            self.pt_end = mmf.Point2D(x, y)
+            self.load_background(BACKGROUND_IMAGE)  # reset the image            
+            self.pt_prev_3d_start, self.pt_unit_start = miu.project_texture_to_canvas(self.proj_matrix, self.pt_start, self.pt_end, self.pt_prev_3d_start, self.pt_unit_start, 720, 576, self.texture, self.image_label)
+            self.pt_start = self.pt_end
+
         else:
             self.setWindowTitle("Mouse outside image_label")
                             

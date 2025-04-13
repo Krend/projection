@@ -54,7 +54,7 @@ class Canvas(QMainWindow):
         print(f"Angle: {angle}")
 
     def on_second_button_click(self):
-        self.texture = miu.load_image_to_bitmap("resource/backgrounds/textureC2.bmp")
+        self.texture = miu.load_image_to_bitmap("resource/backgrounds/textureC3.bmp")
         self.texture  = self.texture.convert("RGBA")
         self.ref_quad.pts[0] = mmf.Point2D(318, 247)
         self.ref_quad.pts[1] = mmf.Point2D(326, 312)

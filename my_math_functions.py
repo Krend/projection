@@ -405,8 +405,8 @@ def calc_rot_angle(pt_center: Point2D, pt_top: Point2D, pt_act: Point2D):
     angle1 = math.atan2(dy1, dx1)
     angle2 = math.atan2(dy2, dx2)
         
-    #return (angle2 - angle1)
-    return math.pi - math.acos((dx1*dx2+dy1*dy2) / (math.sqrt((dx1*dx1)+(dy1*dy1))*math.sqrt((dx2*dx2)+(dy2*dy2))))
+    return math.pi - (angle2 - angle1)
+    #return math.pi - math.acos((dx1*dx2+dy1*dy2) / (math.sqrt((dx1*dx1)+(dy1*dy1))*math.sqrt((dx2*dx2)+(dy2*dy2))))
 
 def line_to_unit_square_3d_3d(pt_start: Point2D,  pt_end: Point2D):
     out_rec_3d: List[Point3D]

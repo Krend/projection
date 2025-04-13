@@ -11,4 +11,4 @@ wheels/
 uv.lock
 
 # This folder will hold images and other resources
-resource/
+#resource/

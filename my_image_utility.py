@@ -5,7 +5,7 @@ from PyQt5.QtGui import QPixmap, QPainter, QImage
 from PyQt5.QtWidgets import QLabel
 from PyQt5.QtCore import Qt
 
-def load_image_to_bitmap(file_path):
+def load_image_from_file(file_path):
     """
     Load an image file into a bitmap.
 
@@ -28,6 +28,8 @@ def project_texture(tex_source: Image, tex_target: Image, bounds_rect: mmf.Rect,
     :param bounds_rect: Rectangle defining the bounds for projection
     :param combined_matrix: Combined 3x3 matrix
     """
+    assert tex_source.mode == tex_target.mode, "Source and target images must have the same mode"
+    assert len(combined_matrix.m) == 9, "Matrix must have 9 elements"
 
     x_min  = round(max(0, min(bounds_rect.pt0.x, tex_target.width - 1)))
     y_min  = round(max(0, min(bounds_rect.pt0.y, tex_target.height - 1)))
@@ -39,13 +41,36 @@ def project_texture(tex_source: Image, tex_target: Image, bounds_rect: mmf.Rect,
             # Get the pixel coordinates in the source image
             x_source, y_source = mmf.source_to_dest(i, j, combined_matrix)
             if 0 <= x_source < tex_source.width -1 and 0 <= y_source < tex_source.height -1:
-                color = tex_source.getpixel((x_source, y_source))  # Pass coordinates as a tuple
+                color = tex_source.getpixel((x_source, y_source))  # Pass coordinates as a tuple                
                 tex_target.putpixel((i, j), color)
-            else:                
-                tex_target.putpixel((i, j), (255, 255, 255, 255))
+            #else:                
+                #tex_target.putpixel((i, j), (255, 255, 255, 255))
     return tex_target
 
 def project_texture_to_canvas(proj_matrix: mmf.Matrix4x4, pt_start: mmf.Point2D, pt_end: mmf.Point2D, pt_prev_3d_start: mmf.Point3D, pt_unit_start: mmf.Point3D, width: int, height: int, tex_in: Image, canvas: QLabel):
+    """
+    Projects a texture onto a 2D canvas using a 3D projection matrix and updates the canvas with the result.
+    Args:
+        proj_matrix (mmf.Matrix4x4): The 4x4 projection matrix used for 3D to 2D transformations.
+        pt_start (mmf.Point2D): The starting point in 2D space for the projection.
+        pt_end (mmf.Point2D): The ending point in 2D space for the projection.
+        pt_prev_3d_start (mmf.Point3D): The previous 3D starting point used for continuity in projections.
+        pt_unit_start (mmf.Point3D): The unit starting point in 3D space for normalization.
+        width (int): The width of the canvas in pixels.
+        height (int): The height of the canvas in pixels.
+        tex_in (Image): The input texture image to be projected.
+        canvas (QLabel): The canvas widget where the projected texture will be drawn.
+    Returns:
+        Tuple[mmf.Point3D, mmf.Point3D]: A tuple containing the updated previous 3D starting point and the updated unit starting point.
+    Raises:
+        AssertionError: If the projection matrix does not have 16 elements or if width and height are not positive.
+    Notes:
+        - The function performs reverse projection from 2D to 3D, normalizes the 3D points, and re-projects them back to 2D.
+        - It calculates transformation matrices to map the texture onto the canvas.
+        - The resulting texture is drawn onto the canvas along with its bounding rectangle and quad.
+    """
+    assert len(proj_matrix.m) == 16, "Projection matrix must have 16 elements"
+    assert width > 0 and height > 0, "Width and height must be positive"
     inv_matrix = mmf.invers4x4(proj_matrix)
 
     pt2_in_list: List[mmf.Point2D] = []
@@ -78,19 +103,19 @@ def project_texture_to_canvas(proj_matrix: mmf.Matrix4x4, pt_start: mmf.Point2D,
 
     matrix_c = mmf.multiply3x3(matrix_a, matrix_b)
 
-    quad = mmf.Quad()
-    quad.pts = quad_2d
+    bounds_quad = mmf.Quad()
+    bounds_quad.pts = quad_2d
 
-    rec = mmf.quad_to_rect(quad)
+    bounds_rect = mmf.quad_to_rect(bounds_quad)
 
     tex_out = Image.new(tex_in.mode, (canvas.width(), canvas.height()), (0, 0, 0, 0))
-    #tex_out = Image.new(tex_in.mode, (720, 567), (0, 0, 0, 0))
-    project_texture(tex_in, tex_out, rec, matrix_c)
+    
+    project_texture(tex_in, tex_out, bounds_rect, matrix_c)
 
     # Draw the texture onto the canvas
-    draw_onto_qlabel(canvas, tex_out)    
-    draw_bounding_rectangle(canvas, rec)
-    draw_bounding_quad(canvas, quad)    
+    draw_onto_qlabel(canvas, tex_out)
+    draw_bounding_rectangle(canvas, bounds_rect)
+    draw_bounding_quad(canvas, bounds_quad)
 
     return pt_prev_3d_start, pt_unit_start
 
@@ -119,7 +144,7 @@ def draw_bounding_rectangle(canvas: QLabel, rect: mmf.Rect):
 
     :param canvas: QLabel to draw on
     :param rect: Rectangle to draw
-    """
+    """    
     painter = QPainter(canvas.pixmap())
     painter.setPen(Qt.red)
     painter.drawRect(round(rect.pt0.x), round(rect.pt0.y), round(rect.pt1.x - rect.pt0.x), round(rect.pt1.y - rect.pt0.y))
@@ -133,6 +158,7 @@ def draw_bounding_quad(canvas: QLabel, quad: mmf.Quad):
     :param canvas: QLabel to draw on
     :param quad: Quad to draw
     """
+    assert len(quad.pts) == 4, "Quad must have 4 points"
     painter = QPainter(canvas.pixmap())
     painter.setPen(Qt.red)
     

@@ -50,6 +50,7 @@ class Rect:
 def adjugate3x3(matrix: Matrix3x3):
     if len(matrix.m) != 9:
         return -1    
+        
     return [matrix.m[4]*matrix.m[8]-matrix.m[5]*matrix.m[7], matrix.m[2]*matrix.m[7]-matrix.m[1]*matrix.m[8], matrix.m[1]*matrix.m[5]-matrix.m[2]*matrix.m[4],
             matrix.m[5]*matrix.m[6]-matrix.m[3]*matrix.m[8], matrix.m[0]*matrix.m[8]-matrix.m[2]*matrix.m[6], matrix.m[2]*matrix.m[3]-matrix.m[0]*matrix.m[5],
             matrix.m[3]*matrix.m[7]-matrix.m[4]*matrix.m[6], matrix.m[1]*matrix.m[6]-matrix.m[0]*matrix.m[7], matrix.m[0]*matrix.m[4]-matrix.m[1]*matrix.m[3] ]
@@ -65,17 +66,19 @@ def inverse3x3(matrix: Matrix3x3):
     if len(matrix.m) != 9:
         return -1
     
-    det = determinant3x3(matrix.m)
+    inv_matrix = Matrix3x3()
+    
+    det = determinant3x3(matrix)
 
     if det == 0:
         return -1
     
-    adj = adjugate3x3(matrix.m)
+    adj = adjugate3x3(matrix)
 
     for i in range(9):
-        matrix.m[i] = matrix.m[i] / det
+        inv_matrix.m[i] = adj[i] / det
 
-    return matrix
+    return inv_matrix
 
 # matrix.m size of 16
 def invers4x4(matrix: Matrix4x4):
@@ -210,7 +213,10 @@ def multiply3x3(matrix_a: Matrix3x3, matrix_b: Matrix3x3):
     matrix_c = Matrix3x3()
     for i in range(3):
         for j in range(3):
-            matrix_c.m[i * 3 + j] = sum(matrix_a.m[i * 3 + k] * matrix_b.m[k * 3 + j] for k in range(3))
+            a = 0
+            for k in range(3):
+                a += (matrix_a.m[i * 3 + k] * matrix_b.m[k * 3 + j])
+            matrix_c.m[i * 3 + j] = a    
 
     return matrix_c
 
@@ -250,7 +256,7 @@ def quad_to_rect(quad: Quad):
     rect.pt0.y = quad.pts[0].y
     rect.pt1.y = quad.pts[0].y
 
-    for i in range(1, 3):
+    for i in range(1, 4):
         rect.pt0.x = min(rect.pt0.x, quad.pts[i].x)
         rect.pt1.x = max(rect.pt1.x, quad.pts[i].x)
         rect.pt0.y = min(rect.pt0.y, quad.pts[i].y)
@@ -363,17 +369,27 @@ def compute_transfer_matrix(pt2d_list: List[Point2D], width: int, height: int):
     n = 1000
     for i in range (100):
        matrix = approximate_matrix(matrix, pt3d_list, pt2d_list, width, height, n, pert1)
+       matrix = approximate_matrix(matrix, pt3d_list, pt2d_list, width, height, n, pert2)
     return matrix
 
 
-def line_reverse_project_2d_3d(pt2d_list: List[Point2D], width: int, height: int, inv_matrix: Matrix4x4):
-    pt3d_list = []
+def list_reverse_project_2d_3d(pt2d_list: List[Point2D], width: int, height: int, inv_matrix: Matrix4x4):
+    pt3d_list: List[Point3D]  = []
     for pt2d in pt2d_list:
-        pt3d = Point3D()
+        pt3d = Point3D(0, 0, 0)
         pt3d.x, pt3d.y, pt3d.z = project_2d_3d(pt2d, width, height, inv_matrix)
         pt3d_list.append(pt3d)
 
     return pt3d_list
+
+def list_project_3d_2d(pt3d_list: List[Point3D], width: int, height: int, matrix: Matrix4x4):
+    pt2d_list: List[Point2D]  = []
+    for pt3d in pt3d_list:
+        pt2d = Point2D(0, 0)
+        pt2d.x, pt2d.y = project_3d_2d(pt3d, width, height, matrix)
+        pt2d_list.append(pt2d)
+
+    return pt2d_list
 
 def calc_rot_angle(pt_center: Point2D, pt_top: Point2D, pt_act: Point2D):
     # Calculate the angle between two points with respect to a center point
@@ -389,4 +405,28 @@ def calc_rot_angle(pt_center: Point2D, pt_top: Point2D, pt_act: Point2D):
 
     return (angle2 - angle1)
 
+def line_to_unit_square_3d_3d(pt_start: Point2D,  pt_end: Point2D):
+    out_rec_3d: List[Point3D]
+    out_rec_3d = [Point3D(0, 0, 0) for _ in range(4)]
+    out_pt_unit_start = Point3D(0, 0, 0)
 
+    pt_top  = Point2D(pt_start.x, pt_start.y + 1)
+    angle_rad = calc_rot_angle(pt_start, pt_top, pt_end)
+
+    out_pt_unit_start.x = -1 * math.sin(angle_rad) + pt_end.x
+    out_pt_unit_start.y = math.cos(angle_rad) + pt_end.y
+
+    norm = 0.5
+    out_rec_3d[0].x = norm * math.cos(angle_rad) + out_pt_unit_start.x
+    out_rec_3d[0].y = norm * math.sin(angle_rad) + out_pt_unit_start.y
+
+    out_rec_3d[1].x = norm  * math.cos(angle_rad) + pt_end.x
+    out_rec_3d[1].y = norm  * math.sin(angle_rad) + pt_end.y
+
+    out_rec_3d[2].x = -norm * math.cos(angle_rad) + pt_end.x
+    out_rec_3d[2].y = -norm * math.sin(angle_rad) + pt_end.y
+
+    out_rec_3d[3].x = -norm * math.cos(angle_rad) + out_pt_unit_start.x
+    out_rec_3d[3].y = -norm * math.sin(angle_rad) + out_pt_unit_start.y
+
+    return out_rec_3d, out_pt_unit_start    

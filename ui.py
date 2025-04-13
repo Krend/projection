@@ -21,7 +21,7 @@ class Canvas(QMainWindow):
         self.image_label = QLabel(self)
         self.image_label.setGeometry(0, 0, 800, 600)  # Fill the window        
         self.load_background(BACKGROUND_IMAGE)  # Load the background image
-
+        
         # Add a button at position (800, 20)
         self.button = QPushButton("Reset everything", self)
         self.button.move(800, 20)
@@ -35,6 +35,14 @@ class Canvas(QMainWindow):
         self.third_button = QPushButton("Load texture", self)
         self.third_button.move(800, 100)
         self.third_button.clicked.connect(self.on_third_button_click)
+
+        self.fourth_button = QPushButton("Draw over", self)
+        self.fourth_button.move(800, 140)
+        self.fourth_button.clicked.connect(self.on_fourth_button_click)
+
+        self.fifth_button = QPushButton("Project", self)
+        self.fifth_button.move(800, 180)
+        self.fifth_button.clicked.connect(self.on_fifth_button_click)
 
     def on_button_click(self):
         print("Button clicked!")
@@ -59,13 +67,33 @@ class Canvas(QMainWindow):
             image = self.texture.convert("RGBA")  # Ensure the image is in RGBA format
             data = image.tobytes("raw", "RGBA")
             qimage = QImage(data, image.width, image.height, QImage.Format_RGBA8888)
-            self.image_label.setPixmap(QPixmap.fromImage(qimage).scaledToHeight(self.height()))  # Scale the image to fit the window height
+            self.image_label.setPixmap(QPixmap.fromImage(qimage).scaledToHeight(self.height()))  # Scale the image to fit the window height            
         else:
             print("Failed to load texture image.")
 
+    def on_fourth_button_click(self):
+        # Draw the texture over the background image at the specified coordinates
+        x = 100
+        y = 100
+        overlay_image_path = "resource/backgrounds/textureC2.bmp"
+        self.draw_image(overlay_image_path, x, y)
+
+    def on_fifth_button_click(self):
+        # Project the texture onto the background image using the transformation matrix
+        overlay_image_path = "resource/backgrounds/textureC2.bmp"
+        overlay_image = miu.load_image_to_bitmap(overlay_image_path)
+        if overlay_image is not None:
+            overlay_image = overlay_image.convert("RGBA")
+            pt2_start = mmf.Point2D(300, 300)
+            pt2_end = mmf.Point2D(301, 301)
+            pt3 = mmf.Point3D(0, 0, 0)
+            pt_unit_start = mmf.Point3D(0, 0, 0)
+            #miu.project_texture_to_canvas(self.proj_matrix, pt2_start, pt2_end, pt3, pt_unit_start, 720, 576, overlay_image, self.image_label.pixmap().toImage())
+            miu.project_texture_to_canvas(self.proj_matrix, pt2_start, pt2_end, pt3, pt_unit_start, 720, 576, overlay_image, self.image_label)
+
     def paintEvent(self, event):
-        painter = QPainter(self)
-        painter.setBrush(Qt.blue)
+        painter = QPainter(self)        
+        painter.setBrush(QColor(64, 64, 64))  # Set brush to a dark grey color
         painter.drawRect(0, 0, self.width(), self.height())
 
     def mousePressEvent(self, event):        
@@ -84,8 +112,11 @@ class Canvas(QMainWindow):
 
         # Check if the position is within the bounds of the image_label
         if 0 <= x < self.image_label.width() and 0 <= y < self.image_label.height():
-            self.setWindowTitle(f"Mouse move over image_label at: ({x}, {y})")
-            self.set_pixel(x, y, QColor(Qt.red))  # Set the pixel color to red at the position
+            #self.setWindowTitle(f"Mouse move over image_label at: ({x}, {y})")
+            #self.set_pixel(x, y, QColor(Qt.red))  # Set the pixel color to red at the position
+            self.load_background(BACKGROUND_IMAGE)  # reset the image
+            overlay_image_path = "resource/backgrounds/textureC2.bmp"
+            self.draw_image(overlay_image_path, x, y)
         else:
             self.setWindowTitle("Mouse outside image_label")
                             
@@ -97,22 +128,7 @@ class Canvas(QMainWindow):
             if 0 <= x < image.width() and 0 <= y < image.height():
                 image.setPixel(x, y, color.rgb())
                 self.image_label.setPixmap(QPixmap.fromImage(image))
-
-    def draw_cross(self, x: int, y: int, color: QColor, size: int = 5):
-        """
-        Draw a cross at the specified coordinates (x, y) with the given color and size.
-        
-        :param x: X coordinate of the center of the cross
-        :param y: Y coordinate of the center of the cross
-        :param color: Color of the cross
-        :param size: Size of the cross
-        """
-        painter = QPainter(self.image_label.pixmap())
-        painter.setPen(color)
-        painter.drawLine(x - size, y, x + size, y)
-        painter.drawLine(x, y - size, x, y + size)
-        self.image_label.update()
-
+                
     def draw_ellipse(self, x: int, y: int, color: QColor, size: int = 5):
         """
         Draw an ellipse at the specified coordinates (x, y) with the given color and size.
@@ -122,8 +138,7 @@ class Canvas(QMainWindow):
         :param color: Color of the ellipse
         :param size: Size of the ellipse
         """
-        painter = QPainter(self.image_label.pixmap())
-        #painter.setPen(color)
+        painter = QPainter(self.image_label.pixmap())        
         painter.setBrush(color)
         painter.drawEllipse(x - size, y - size, 2 * size, 2 * size)
         self.image_label.update()
@@ -139,6 +154,30 @@ class Canvas(QMainWindow):
             self.image_label.setPixmap(pixmap.scaledToHeight(self.height()))  # Scale the image to fit the window height, otherwise it will be too big
         else:
             print(f"Failed to load image from {file_path}")
+
+    def draw_image(self, image_path, x, y):
+        """
+        Draw an image at the specified coordinates (x, y) over the image_label.
+
+        :param image_path: Path to the image file to be drawn
+        :param x: X coordinate where the image will be drawn
+        :param y: Y coordinate where the image will be drawn
+        """
+        pixmap = self.image_label.pixmap()
+        if pixmap is not None:
+            image = pixmap.toImage()
+            overlay_pixmap = QPixmap(image.width(), image.height())
+            overlay_pixmap.fill(Qt.transparent)
+
+            painter = QPainter(overlay_pixmap)
+            painter.drawPixmap(0, 0, QPixmap.fromImage(image))  # Draw the existing image
+            overlay_image = QPixmap(image_path)
+            z = round(overlay_image.width() / 2)
+            if not overlay_image.isNull():
+                painter.drawPixmap(x - z, y, overlay_image)  # Draw the new image at the specified position
+            painter.end()
+
+            self.image_label.setPixmap(overlay_pixmap)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

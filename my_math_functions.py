@@ -293,7 +293,10 @@ def project_2d_3d(pt2d: Point2D, width: int, height: int, inv_matrix: Matrix4x4)
     return (x2 / w), (y2 / w), (z2 / w)
 
 def point_dist_2d(pt1: Point2D, pt2: Point2D):
-    return ((pt1.x - pt2.x) ** 2 + (pt1.y - pt2.y) ** 2) ** 0.5
+    #return ((pt1.x - pt2.x) ** 2 + (pt1.y - pt2.y) ** 2) ** 0.5
+    dx = pt2.x - pt1.x
+    dy = pt2.y - pt1.y
+    return dx * dx + dy * dy
 
 def eval_dist(matrix: Matrix4x4, pt3d_list : List[Point3D], pt2d_list: List[Point2D], width: int, height: int):
     if len(pt3d_list) != len(pt2d_list):
@@ -301,31 +304,38 @@ def eval_dist(matrix: Matrix4x4, pt3d_list : List[Point3D], pt2d_list: List[Poin
     
     dist = 0
     for i in range(len(pt3d_list)):
-        pt2d = Point2D()
+        pt2d = Point2D(0, 0)
         pt2d.x, pt2d.y = project_3d_2d(pt3d_list[i], width, height, matrix)
         dist += point_dist_2d(pt2d, pt2d_list[i])
 
     return dist
 
 def perturb_matrix(matrix: Matrix4x4, perturbation: float):
+    perturbed_matrix = Matrix4x4()
     for i in range(len(matrix.m)):
-        matrix.m[i] += random.uniform(-perturbation, perturbation)
-    return matrix
+        perturbed_matrix.m[i] = matrix.m[i]
 
-def approximate_matrix(matrix: Matrix4x4, pt3d_list : List[Point3D], pt2d_list: List[Point2D], width: int, height: int):
+    i = random.randrange(0, 16)    
+    perturbed_matrix.m[i] += random.uniform(-perturbation, perturbation)
+    return perturbed_matrix
+
+def approximate_matrix(matrix: Matrix4x4, pt3d_list : List[Point3D], pt2d_list: List[Point2D], width: int, height: int, n:  int, perturbation: float):
     if len(pt3d_list) != len(pt2d_list):
         return -1
     
-    best_matrix = matrix
-    best_dist = eval_dist(matrix, pt3d_list, pt2d_list, width, height)
-    
-    for i in range(1000):  # Number of iterations
-        perturbed_matrix = perturb_matrix(matrix, 0.1)  # Perturbation value
+    best_matrix = Matrix4x4()
+    for i in range(len(matrix.m)):
+        best_matrix.m[i] = matrix.m[i]
+    best_dist = eval_dist(best_matrix, pt3d_list, pt2d_list, width, height)
+        
+    for i in range(n):  # Number of iterations
+        perturbed_matrix = perturb_matrix(best_matrix, perturbation) 
         dist = eval_dist(perturbed_matrix, pt3d_list, pt2d_list, width, height)
         
         if dist < best_dist:
             best_dist = dist
-            best_matrix = perturbed_matrix
+            for j in range(len(best_matrix.m)):
+                best_matrix.m[j] = perturbed_matrix.m[j]
 
     return best_matrix
 
@@ -340,16 +350,20 @@ def compute_transfer_matrix(pt2d_list: List[Point2D], width: int, height: int):
 
     #todo: check if it's required to swap [2] and [3] in pt2d_list (will depend on my input data in this implementation)
 
-    pt3d_list =  List[Point3D]()
-    pt3d_list.append(Point3D(0, 0, 0))
-    pt3d_list.append(Point3D(0, 1, 0))
-    pt3d_list.append(Point3D(1, 0, 0))
-    pt3d_list.append(Point3D(1, 1, 0))
+    pt3d_list =  List[Point3D]
+    pt3d_list = [Point3D(0, 0, 0) for _ in range(4)]
+    pt3d_list[0] = (Point3D(0, 0, 0))
+    pt3d_list[1] = (Point3D(0, 1, 0))
+    pt3d_list[2] = (Point3D(1, 0, 0))
+    pt3d_list[3] = (Point3D(1, 1, 0))
 
     # Compute the transfer matrix using the approximate_matrix function
-    best_matrix = approximate_matrix(matrix, pt3d_list, pt2d_list, width, height)
-
-    return best_matrix
+    pert1 = 1.0
+    pert2 = 0.1
+    n = 1000
+    for i in range (100):
+       matrix = approximate_matrix(matrix, pt3d_list, pt2d_list, width, height, n, pert1)
+    return matrix
 
 
 def line_reverse_project_2d_3d(pt2d_list: List[Point2D], width: int, height: int, inv_matrix: Matrix4x4):
@@ -361,7 +375,7 @@ def line_reverse_project_2d_3d(pt2d_list: List[Point2D], width: int, height: int
 
     return pt3d_list
 
-def calc_rot_angle(pt_center: Point2D, pt_act: Point2D, pt_top: Point2D):
+def calc_rot_angle(pt_center: Point2D, pt_top: Point2D, pt_act: Point2D):
     # Calculate the angle between two points with respect to a center point
     dx1 = pt_act.x - pt_center.x
     dy1 = pt_act.y - pt_center.y
@@ -373,6 +387,6 @@ def calc_rot_angle(pt_center: Point2D, pt_act: Point2D, pt_top: Point2D):
     angle1 = math.atan2(dy1, dx1)
     angle2 = math.atan2(dy2, dx2)
 
-    return angle2 - angle1
+    return (angle2 - angle1)
 
 

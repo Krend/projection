@@ -213,10 +213,10 @@ def multiply3x3(matrix_a: Matrix3x3, matrix_b: Matrix3x3):
     matrix_c = Matrix3x3()
     for i in range(3):
         for j in range(3):
-            a = 0
+            field_sum = 0
             for k in range(3):
-                a += (matrix_a.m[i * 3 + k] * matrix_b.m[k * 3 + j])
-            matrix_c.m[i * 3 + j] = a    
+                field_sum += (matrix_a.m[i * 3 + k] * matrix_b.m[k * 3 + j])
+            matrix_c.m[i * 3 + j] = field_sum    
 
     return matrix_c
 
@@ -227,12 +227,12 @@ def get_coeffs(x1: float, x2: float, x3: float, x4: float, y1: float, y2: float,
     
     if denom == 0:
         return -1, -1, -1   #todo: check if this can be a valid result
-    
-    g = ((-x1 * y3 + x3 * y1 - x4 * (y1 - y3) + y4 * (x1 - x3)) / denom)
+        
     l = ((x2 * y3 - x3 * y2 + x4 * (y2 - y3) - y4 * (x2 - x3)) / denom)
+    g = ((-x1 * y3 + x3 * y1 - x4 * (y1 - y3) + y4 * (x1 - x3)) / denom)
     t = ((x1 * y2 - x2 * y1 + x4 * (y1 - y2) - y4 * (x1 - x2)) / denom)
-
-    return g, l, t
+    
+    return l, g, t
 
 # matrix.m size of 9
 def source_to_dest(x_source: int, y_source: int, combined_matrix: Matrix3x3):
@@ -406,7 +406,7 @@ def calc_rot_angle(pt_center: Point2D, pt_top: Point2D, pt_act: Point2D):
     angle2 = math.atan2(dy2, dx2)
         
     #return (angle2 - angle1)
-    return math.pi - 1 * math.acos((dx1*dx2+dy1*dy2) / (math.sqrt((dx1*dx1)+(dy1*dy1))*math.sqrt((dx2*dx2)+(dy2*dy2))))
+    return math.pi - math.acos((dx1*dx2+dy1*dy2) / (math.sqrt((dx1*dx1)+(dy1*dy1))*math.sqrt((dx2*dx2)+(dy2*dy2))))
 
 def line_to_unit_square_3d_3d(pt_start: Point2D,  pt_end: Point2D):
     out_rec_3d: List[Point3D]

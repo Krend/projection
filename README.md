@@ -6,6 +6,7 @@ Calculate the 3D projection matrix, then project a texture (pixel by pixel) onto
 
 How to use:
 
+* Run ui.py
 * Press: 'Calculate'
 * Click and drag the mouse on the background image
 
@@ -17,8 +18,10 @@ https://math.stackexchange.com/questions/296794/finding-the-transform-matrix-fro
 
 todo:
 
+* Add tests.
 * Add @jit optimization (numba).
 * Remove unnecessary types.
 * Throw exceptions instead of weird return values.
 * Handle these exceptions in the UI.
 * Figure out why the image relative coordinates get messes up if I resize the window.
+* Add functinality to define a custom quad for the calculation of the projection matrix.

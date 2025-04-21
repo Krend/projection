@@ -6,9 +6,8 @@ Calculate the 3D projection matrix, then project a texture (pixel by pixel) onto
 
 How to use:
 
-Press: 'Calculate'
-
-Click and drag the mouse on the background image
+* Press: 'Calculate'
+* Click and drag the mouse on the background image
 
 Based on: 
 

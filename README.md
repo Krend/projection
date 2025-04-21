@@ -23,5 +23,5 @@ todo:
 * Remove unnecessary types.
 * Throw exceptions instead of weird return values.
 * Handle these exceptions in the UI.
-* Figure out why the image relative coordinates get messes up if I resize the window.
+* Figure out why the image relative coordinates get messed up if I resize the window.
 * Add functinality to define a custom quad for the calculation of the projection matrix.

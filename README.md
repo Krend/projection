@@ -2,7 +2,7 @@ A fun project where I do all the math for 2D->3D perspective projections.
 
 Goal:
 
-Calculate the 3D projection matrix, then project a texture (pixel by pixel) onto an other one as if it was in 3D space.
+Calculate the 3D projection matrix, then project a texture (pixel by pixel) onto the background as if it was in 3D space.
 
 How to use:
 

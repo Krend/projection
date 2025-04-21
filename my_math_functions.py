@@ -158,7 +158,8 @@ def inverse3x3(matrix: Matrix3x3):
     
     det = determinant3x3(matrix)
 
-    if det == 0: # two rows equal
+    # two rows equal
+    if det == 0:    #todo: throwing an exception might be better
         return -1
     
     adj = adjugate3x3(matrix)
@@ -348,6 +349,13 @@ def multiply3x3(matrix_a: Matrix3x3, matrix_b: Matrix3x3):
 # Advanced projections functions
 
 def get_coeffs(x1: float, x2: float, x3: float, x4: float, y1: float, y2: float, y3: float, y4: float):
+    """
+    Computes the coefficients (l, g, t) of the following system of liner equations:
+        | x1  x2  x3 |   |l|   |x4|
+        | y1  y2  y2 | * |g| = |y4|
+        |  1   1   1 |   |t|   | 1|
+
+    """
     denom = (x1 * y2 - x1 * y3 - x2 * y1 + x2 * y3 + x3 * y1 - x3 * y2)
     
     if denom == 0:

@@ -1,7 +1,7 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton
-from PyQt5.QtGui import QPixmap, QPainter, QImage
-from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QPixmap, QPainter
+from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QColor 
 import my_math_functions as mmf
 import my_image_utility as miu
@@ -17,26 +17,20 @@ class Canvas(QMainWindow):
     pt_end = mmf.Point2D(0, 0)
     pt_prev_3d_start = mmf.Point3D(0, 0, 0)
     pt_unit_start = mmf.Point3D(0, 0, 0)
+    calc_done = False
 
     def __init__(self):
         super().__init__()
         self.setWindowTitle("QT User Interface")
-        self.setGeometry(100, 100, 900, 600)  # x, y, width, height
+        self.setGeometry(100, 100, 9000, 600)  # x, y, width, height
+        self.setFixedSize(QSize(900, 600)); # resizing messes up the relative coordinates
         self.image_label = QLabel(self)
         self.image_label.setGeometry(0, 0, 800, 600)  # Fill the window        
         self.load_background(BACKGROUND_IMAGE)  # Load the background image
         
-        # Add a button at position (800, 20)
-        self.btn_reset = QPushButton("Reset ref pts", self)
-        self.btn_reset.move(800, 20)
-        self.btn_reset.clicked.connect(self.on_btn_reset_click)
-
         self.btn_calc = QPushButton("Calculate", self)
         self.btn_calc.move(800, 60)
         self.btn_calc.clicked.connect(self.on_btn_calc_click)
-
-    def on_btn_reset_click(self):
-        ref_quad = mmf.Quad()
         
     def on_btn_calc_click(self):
         self.texture = miu.load_image_from_file("resource/backgrounds/arrow_texture.bmp")
@@ -48,20 +42,21 @@ class Canvas(QMainWindow):
         
         self.proj_matrix = mmf.compute_transfer_matrix(self.ref_quad.pts, 720, 576)
         print(self.proj_matrix)
+        self.calc_done = True
 
     def paintEvent(self, event):
         painter = QPainter(self)        
         painter.setBrush(QColor(64, 64, 64))  # Set brush to a dark grey color
         painter.drawRect(0, 0, self.width(), self.height())
 
-    def mousePressEvent(self, event):        
-        if event.button() == Qt.LeftButton:  # Check if the left mouse button was clicked
-            x, y = event.x(), event.y()  # Get the x and y coordinates of the click            
-            self.draw_ellipse(x, y, QColor(Qt.red))
-            self.setWindowTitle(f"Mouse clicked at: ({x}, {y})")   
+    #def mousePressEvent(self, event):        
+        #if event.button() == Qt.LeftButton:  # Check if the left mouse button was clicked
+            #x, y = event.x(), event.y()  # Get the x and y coordinates of the click            
+            #self.draw_ellipse(x, y, QColor(Qt.red))
+            #self.setWindowTitle(f"Mouse clicked at: ({x}, {y})")   
 
-        if event.button() == Qt.RightButton:  # Check if the right mouse button was clicked  
-            self.load_background(BACKGROUND_IMAGE)  # reset the image
+        #if event.button() == Qt.RightButton:  # Check if the right mouse button was clicked  
+            #self.load_background(BACKGROUND_IMAGE)  # reset the image
 
     def mouseMoveEvent(self, event):
         """
@@ -82,10 +77,14 @@ class Canvas(QMainWindow):
             - If outside bounds:
                 - Updates the window title to indicate the mouse is outside the `image_label`.
         """
+        if not self.calc_done:
+            return
         # Get the mouse position relative to the image_label
         label_pos = self.image_label.mapFromParent(event.pos())
         x, y = label_pos.x(), label_pos.y()
         
+        #todo: might wrap this part into a try/except block to not crash the program when a calculation is invalid
+
         # Check if the position is within the bounds of the image_label
         if 0 <= x < self.image_label.width() and 0 <= y < self.image_label.height():
             self.pt_end = mmf.Point2D(x, y)

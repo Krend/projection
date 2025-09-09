@@ -1,4 +1,8 @@
 from typing import List
+from dataclasses import dataclass
+import random
+import math
+
 """
 This module provides various mathematical functions and utilities for matrix operations, 
 3D to 2D projections, and 2D to 3D projections. It includes classes for representing 
@@ -36,14 +40,12 @@ Notes:
     - Functions return -1 or (-1, -1, -1) in cases where a valid result cannot be computed.
     - The `approximate_matrix` function uses random perturbations to iteratively improve the transformation matrix.
 """
-from dataclasses import dataclass
-import random
-import math
 # This file contains various mathematical functions used in the project.
 # It includes functions for matrix operations, 3D to 2D projection, and 2D to 3D projection.
 # The functions are designed to work with 3D points and matrices, and they handle various transformations.
 
 #type definitions
+
 @dataclass
 class Point2D:
     x: float
@@ -53,7 +55,7 @@ class Point2D:
 class Point3D:
     x: float
     y: float
-    z: float
+    z: float    #todo: z seems to be 0 in every case in this project, type could be removed
 
 @dataclass
 class Matrix3x3:

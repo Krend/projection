@@ -4,9 +4,11 @@ Goal:
 
 Calculate the 3D projection matrix, then project a texture (pixel by pixel) onto the background as if it was in 3D space.
 
+The virtual environment was managed with uv.
+
 How to use:
 
-* Run ui.py
+* uv run ui.py
 * Press: 'Calculate'
 * Click and drag the mouse on the background image
 
